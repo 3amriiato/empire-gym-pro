@@ -63,8 +63,19 @@
 
 :root {
   --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.129 0.042 264.695);
+  --background: oklch(0.16 0.02 250);
+  --foreground: oklch(0.96 0.01 240);
+  --cyber-cyan: oklch(0.82 0.15 200);
+  --cyber-cyan-soft: oklch(0.82 0.15 200 / 0.15);
+  --cyber-magenta: oklch(0.7 0.25 330);
+  --cyber-amber: oklch(0.82 0.18 75);
+  --cyber-red: oklch(0.68 0.24 25);
+  --cyber-green: oklch(0.78 0.18 155);
+  --panel: oklch(0.21 0.025 255);
+  --panel-2: oklch(0.24 0.03 258);
+  --panel-border: oklch(0.32 0.03 255 / 0.6);
+  --grid-line: oklch(0.82 0.15 200 / 0.07);
+  --foo: 0;
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.129 0.042 264.695);
   --popover: oklch(1 0 0);
