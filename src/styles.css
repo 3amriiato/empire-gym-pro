@@ -334,3 +334,87 @@
   stroke-dashoffset: 200;
   animation: myt-draw 1.6s cubic-bezier(.2,.8,.2,1) .3s forwards;
 }
+
+/* ---------- Empire Gym tokens ---------- */
+:root {
+  --eg-bg: oklch(0.14 0.012 50);
+  --eg-panel: oklch(0.18 0.015 50);
+  --eg-panel-2: oklch(0.22 0.02 55);
+  --eg-border: oklch(0.32 0.03 60 / 0.5);
+  --eg-flame: oklch(0.72 0.21 45);
+  --eg-flame-2: oklch(0.78 0.19 70);
+  --eg-text: oklch(0.96 0.005 60);
+  --eg-muted: oklch(0.7 0.015 60);
+}
+
+.eg-body {
+  background: var(--eg-bg);
+  color: var(--eg-text);
+  background-image:
+    radial-gradient(at 15% 0%, oklch(0.72 0.21 45 / 0.15) 0, transparent 45%),
+    radial-gradient(at 85% 100%, oklch(0.78 0.19 70 / 0.1) 0, transparent 50%);
+}
+
+@keyframes eg-rise {
+  from { opacity: 0; transform: translateY(40px); filter: blur(10px); }
+  to { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+@keyframes eg-marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+@keyframes eg-pulse-glow {
+  0%, 100% { box-shadow: 0 0 0 0 oklch(0.72 0.21 45 / 0.5), 0 0 30px oklch(0.72 0.21 45 / 0.4); }
+  50% { box-shadow: 0 0 0 14px oklch(0.72 0.21 45 / 0), 0 0 50px oklch(0.72 0.21 45 / 0.7); }
+}
+@keyframes eg-flicker {
+  0%, 100% { opacity: 1; }
+  41% { opacity: 1; }
+  42% { opacity: 0.7; }
+  43% { opacity: 1; }
+  45% { opacity: 0.4; }
+  46% { opacity: 1; }
+}
+@keyframes eg-tape {
+  from { transform: translateX(0); }
+  to { transform: translateX(-100px); }
+}
+
+.eg-rise { animation: eg-rise 0.9s cubic-bezier(.2,.8,.2,1) both; }
+.eg-marquee-track { animation: eg-marquee 30s linear infinite; display: flex; width: max-content; }
+.eg-pulse-cta { animation: eg-pulse-glow 2.4s ease-in-out infinite; }
+.eg-flicker { animation: eg-flicker 6s linear infinite; }
+
+.eg-display {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  text-transform: uppercase;
+}
+
+.eg-stripe {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    oklch(0.72 0.21 45) 0 14px,
+    oklch(0.14 0.012 50) 14px 28px
+  );
+  background-size: 200px 200px;
+  animation: eg-tape 2s linear infinite;
+}
+
+.eg-card {
+  position: relative;
+  background: linear-gradient(160deg, var(--eg-panel) 0%, var(--eg-panel-2) 100%);
+  border: 1px solid var(--eg-border);
+  border-radius: 1rem;
+  transition: border-color .35s, transform .4s, box-shadow .4s;
+}
+.eg-card:hover {
+  border-color: oklch(0.72 0.21 45 / 0.55);
+  transform: translateY(-4px);
+  box-shadow: 0 30px 60px -30px oklch(0.72 0.21 45 / 0.45);
+}
+
+.eg-noise {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .04 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+}
