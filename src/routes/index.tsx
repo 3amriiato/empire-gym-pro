@@ -1,544 +1,790 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
-  Activity,
-  AlertTriangle,
-  Bug,
+  ArrowRight,
+  Award,
+  Calendar,
   CheckCircle2,
   ChevronDown,
-  ChevronRight,
-  ChevronUp,
-  Cpu,
-  ExternalLink,
-  Globe,
-  Lock,
-  Search,
-  Shield,
-  Terminal,
+  Clock,
+  Dumbbell,
+  Flame,
+  Heart,
+  Instagram,
+  MapPin,
+  Menu,
+  MessageCircle,
+  Phone,
+  Send,
+  Star,
+  Target,
+  Trophy,
+  Users,
+  X,
+  Zap,
 } from "lucide-react";
+import heroImg from "@/assets/gym-hero.jpg";
+import weightsImg from "@/assets/gym-weights.jpg";
+import cablesImg from "@/assets/gym-cables.jpg";
+import cardioImg from "@/assets/gym-cardio.jpg";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Mythos Exploits — Security Operations Dashboard" },
+      { title: "Empire Gym Khalda — Train Like a King" },
       {
         name: "description",
         content:
-          "Interactive Mythos exploits and CVE commitments tracker. Browser, kernel, and cryptography vulnerabilities at a glance.",
+          "Empire Gym in Khalda, Amman. Free weights, modern machines, expert coaches. Book your first free session — no contracts, just results.",
       },
-      { property: "og:title", content: "Mythos Exploits — SecOps Dashboard" },
+      { property: "og:title", content: "Empire Gym Khalda — Train Like a King" },
       {
         property: "og:description",
-        content: "Live tracker for browser, kernel, and crypto exploits across the Mythos program.",
+        content: "Premium training in Khalda, Amman. Book your free trial session today.",
       },
+      { property: "og:type", content: "website" },
     ],
   }),
-  component: MythosDashboard,
+  component: EmpireGym,
 });
 
-// ---------- Data ----------
-
-type Priority = "Critical" | "High" | "Medium" | "Low";
-type Status = "Pending" | "In Review" | "Resolved";
-type Category =
-  | "Browser"
-  | "Kernel"
-  | "Cryptography"
-  | "Runtime"
-  | "Hypervisor";
-type DocType = "Advisory" | "Patch" | "PoC" | "Disclosure";
-
-interface Exploit {
-  id: string;
-  category: Category;
-  docType: DocType;
-  product: string;
-  cve: string;
-  priority: Priority;
-  status: Status;
-  target: string;
-  cvss: number;
-}
-
-const EXPLOITS: Exploit[] = [
-  { id: "MYT-0419", category: "Browser", docType: "Advisory", product: "Chromium V8 — JIT type confusion", cve: "CVE-2024-7971", priority: "Critical", status: "Pending", target: "2026-05-22", cvss: 9.6 },
-  { id: "MYT-0420", category: "Browser", docType: "PoC", product: "Chromium Blink — UAF in HTMLMediaElement", cve: "CVE-2024-6991", priority: "Critical", status: "In Review", target: "2026-05-19", cvss: 9.4 },
-  { id: "MYT-0421", category: "Browser", docType: "Patch", product: "Firefox SpiderMonkey — OOB write", cve: "CVE-2024-9680", priority: "High", status: "Resolved", target: "2026-04-30", cvss: 8.8 },
-  { id: "MYT-0422", category: "Browser", docType: "Disclosure", product: "Firefox Gecko — Sandbox escape", cve: "CVE-2024-10458", priority: "High", status: "Pending", target: "2026-06-04", cvss: 8.2 },
-  { id: "MYT-0423", category: "Browser", docType: "Advisory", product: "WebKit JSC — Integer overflow", cve: "CVE-2024-44308", priority: "High", status: "In Review", target: "2026-05-30", cvss: 8.6 },
-  { id: "MYT-0424", category: "Kernel", docType: "PoC", product: "Linux io_uring — Privilege escalation", cve: "CVE-2024-0582", priority: "Critical", status: "Pending", target: "2026-05-17", cvss: 9.8 },
-  { id: "MYT-0425", category: "Kernel", docType: "Advisory", product: "Linux nftables — UAF in chain rules", cve: "CVE-2024-1086", priority: "Critical", status: "In Review", target: "2026-05-24", cvss: 9.7 },
-  { id: "MYT-0426", category: "Kernel", docType: "Patch", product: "Linux eBPF — Verifier bypass", cve: "CVE-2024-26642", priority: "High", status: "Resolved", target: "2026-04-12", cvss: 8.4 },
-  { id: "MYT-0427", category: "Kernel", docType: "Disclosure", product: "Linux mm/page_alloc — race condition", cve: "CVE-2024-36971", priority: "Medium", status: "Pending", target: "2026-06-15", cvss: 6.7 },
-  { id: "MYT-0428", category: "Kernel", docType: "Advisory", product: "Linux KSMBD — Auth bypass", cve: "CVE-2024-26808", priority: "High", status: "In Review", target: "2026-05-28", cvss: 8.1 },
-  { id: "MYT-0429", category: "Cryptography", docType: "Advisory", product: "OpenSSL — RSA timing side channel", cve: "CVE-2024-0727", priority: "High", status: "Pending", target: "2026-06-01", cvss: 7.5 },
-  { id: "MYT-0430", category: "Cryptography", docType: "PoC", product: "BoringSSL — ChaCha20 nonce reuse", cve: "CVE-2024-32487", priority: "Critical", status: "Pending", target: "2026-05-21", cvss: 9.1 },
-  { id: "MYT-0431", category: "Cryptography", docType: "Patch", product: "libgcrypt — ECDSA key recovery", cve: "CVE-2024-2236", priority: "High", status: "Resolved", target: "2026-04-22", cvss: 7.8 },
-  { id: "MYT-0432", category: "Cryptography", docType: "Disclosure", product: "glibc TLS — Heap corruption in NSS", cve: "CVE-2024-2961", priority: "Critical", status: "In Review", target: "2026-05-26", cvss: 9.3 },
-  { id: "MYT-0433", category: "Cryptography", docType: "Advisory", product: "GnuTLS — Certificate validation bypass", cve: "CVE-2024-28834", priority: "Medium", status: "Pending", target: "2026-06-08", cvss: 6.4 },
-  { id: "MYT-0434", category: "Runtime", docType: "Patch", product: "systemd — Symlink race in journald", cve: "CVE-2024-3094", priority: "High", status: "Resolved", target: "2026-04-18", cvss: 8.0 },
-  { id: "MYT-0435", category: "Runtime", docType: "Advisory", product: "glibc — __vsyslog_internal buffer overflow", cve: "CVE-2023-6246", priority: "Medium", status: "In Review", target: "2026-05-31", cvss: 7.2 },
-  { id: "MYT-0436", category: "Hypervisor", docType: "PoC", product: "KVM — Nested VMX escape", cve: "CVE-2024-26926", priority: "Critical", status: "Pending", target: "2026-05-20", cvss: 9.5 },
-  { id: "MYT-0437", category: "Hypervisor", docType: "Disclosure", product: "QEMU virtio-net — OOB read", cve: "CVE-2024-7409", priority: "Medium", status: "Pending", target: "2026-06-12", cvss: 6.9 },
-  { id: "MYT-0438", category: "Browser", docType: "Patch", product: "Chromium ANGLE — Shader UAF", cve: "CVE-2024-5274", priority: "Low", status: "Resolved", target: "2026-04-05", cvss: 5.4 },
-];
-
-const CATEGORIES: ("All" | Category)[] = ["All", "Browser", "Kernel", "Cryptography", "Runtime", "Hypervisor"];
-
-const CATEGORY_ICONS: Record<Category, typeof Globe> = {
-  Browser: Globe,
-  Kernel: Cpu,
-  Cryptography: Lock,
-  Runtime: Terminal,
-  Hypervisor: Shield,
+// ----- CONFIG (edit these to ship to a different gym) -----
+const CFG = {
+  name: "Empire Gym",
+  city: "Khalda, Amman",
+  whatsapp: "+962799999999", // TODO: replace with owner's WhatsApp (with country code, no + or spaces in URL)
+  email: "owner@empiregym.jo", // TODO: replace with owner's email — booking form is wired here
+  instagram: "empiregym.jo", // TODO: replace with handle
+  mapsQuery: "Empire Gym Khalda Amman",
+  hours: [
+    { d: "Saturday – Thursday", t: "6:00 AM – 12:00 AM" },
+    { d: "Friday", t: "2:00 PM – 11:00 PM" },
+  ],
 };
 
-const PRIORITY_STYLES: Record<Priority, string> = {
-  Critical: "bg-[oklch(0.68_0.24_25/0.12)] text-[oklch(0.78_0.22_25)] border-[oklch(0.68_0.24_25/0.4)]",
-  High: "bg-[oklch(0.82_0.18_75/0.12)] text-[oklch(0.85_0.18_75)] border-[oklch(0.82_0.18_75/0.4)]",
-  Medium: "bg-[oklch(0.82_0.15_200/0.12)] text-[oklch(0.85_0.15_200)] border-[oklch(0.82_0.15_200/0.35)]",
-  Low: "bg-[oklch(0.5_0.02_250/0.3)] text-[oklch(0.75_0.02_250)] border-[oklch(0.5_0.02_250/0.5)]",
-};
-
-const STATUS_DOT: Record<Status, string> = {
-  Pending: "bg-[oklch(0.82_0.18_75)]",
-  "In Review": "bg-[oklch(0.82_0.15_200)]",
-  Resolved: "bg-[oklch(0.78_0.18_155)]",
-};
-
-// ---------- Hooks ----------
-
-function useCountUp(target: number, duration = 1400) {
-  const [val, setVal] = useState(0);
-  useEffect(() => {
-    let raf = 0;
-    const start = performance.now();
-    const tick = (t: number) => {
-      const p = Math.min(1, (t - start) / duration);
-      const eased = 1 - Math.pow(1 - p, 3);
-      setVal(target * eased);
-      if (p < 1) raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [target, duration]);
-  return val;
-}
+const WHATSAPP_URL = `https://wa.me/${CFG.whatsapp.replace(/\D/g, "")}?text=${encodeURIComponent(
+  `Hi ${CFG.name}, I'd like to book a free trial session.`
+)}`;
 
 // ---------- Atoms ----------
 
-function Sparkline({ points, color }: { points: number[]; color: string }) {
-  const w = 120, h = 36;
-  const max = Math.max(...points), min = Math.min(...points);
-  const range = max - min || 1;
-  const path = points
-    .map((v, i) => {
-      const x = (i / (points.length - 1)) * w;
-      const y = h - ((v - min) / range) * h;
-      return `${i === 0 ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`;
-    })
-    .join(" ");
-  return (
-    <svg width={w} height={h} className="myt-spark overflow-visible">
-      <defs>
-        <linearGradient id={`g-${color}`} x1="0" x2="0" y1="0" y2="1">
-          <stop offset="0%" stopColor={color} stopOpacity="0.4" />
-          <stop offset="100%" stopColor={color} stopOpacity="0" />
-        </linearGradient>
-      </defs>
-      <path d={path} stroke={color} strokeWidth="1.6" fill="none" strokeLinecap="round" />
-    </svg>
-  );
+function Stripe({ className = "" }: { className?: string }) {
+  return <div className={`h-2 eg-stripe ${className}`} />;
 }
 
-function KpiCard({
-  label,
-  value,
-  suffix,
-  decimals = 0,
-  icon: Icon,
-  accent,
-  spark,
-  delay,
-  pulse,
-  caption,
-}: {
-  label: string;
-  value: number;
-  suffix?: string;
-  decimals?: number;
-  icon: typeof Shield;
-  accent: string;
-  spark: number[];
-  delay: number;
-  pulse?: boolean;
-  caption?: string;
-}) {
-  const v = useCountUp(value);
+function SectionTag({ icon: Icon, children }: { icon: typeof Flame; children: React.ReactNode }) {
   return (
-    <div
-      className="myt-card myt-fade-up p-5 overflow-hidden"
-      style={{ animationDelay: `${delay}ms` }}
-    >
-      <div className="myt-card-shimmer" />
-      <div className="flex items-start justify-between relative z-10">
-        <div>
-          <div className="text-[11px] uppercase tracking-[0.18em] text-[oklch(0.7_0.02_250)] font-medium">
-            {label}
-          </div>
-          <div className="mt-2 flex items-baseline gap-1">
-            <span className="text-4xl font-semibold tabular-nums tracking-tight" style={{ color: accent }}>
-              {v.toFixed(decimals)}
-            </span>
-            {suffix && <span className="text-sm text-[oklch(0.7_0.02_250)]">{suffix}</span>}
-          </div>
-          {caption && (
-            <div className="mt-1 text-xs text-[oklch(0.65_0.02_250)]">{caption}</div>
-          )}
-        </div>
-        <div
-          className={`relative h-10 w-10 rounded-lg flex items-center justify-center ${pulse ? "myt-pulse-ring" : ""}`}
-          style={{ background: `${accent.replace(")", " / 0.12)").replace("oklch(", "oklch(")}`, color: accent, border: `1px solid ${accent.replace(")", " / 0.3)")}` }}
-        >
-          <Icon size={18} />
-        </div>
-      </div>
-      <div className="mt-4 relative z-10">
-        <Sparkline points={spark} color={accent} />
-      </div>
+    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[oklch(0.72_0.21_45/0.4)] bg-[oklch(0.72_0.21_45/0.08)] text-[oklch(0.85_0.15_55)] text-xs font-mono uppercase tracking-[0.18em]">
+      <Icon size={12} /> {children}
     </div>
-  );
-}
-
-function Badge({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-  return (
-    <span className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-[11px] font-medium ${className}`}>
-      {children}
-    </span>
-  );
-}
-
-type SortKey = keyof Exploit;
-
-function SortHeader({
-  label,
-  k,
-  sort,
-  setSort,
-  className = "",
-}: {
-  label: string;
-  k: SortKey;
-  sort: { key: SortKey; dir: "asc" | "desc" };
-  setSort: (s: { key: SortKey; dir: "asc" | "desc" }) => void;
-  className?: string;
-}) {
-  const active = sort.key === k;
-  return (
-    <th className={`text-left text-[11px] uppercase tracking-[0.14em] font-semibold text-[oklch(0.7_0.02_250)] py-3 px-4 ${className}`}>
-      <button
-        onClick={() => setSort({ key: k, dir: active && sort.dir === "asc" ? "desc" : "asc" })}
-        className={`inline-flex items-center gap-1.5 hover:text-[oklch(0.85_0.15_200)] transition-colors ${active ? "text-[oklch(0.85_0.15_200)]" : ""}`}
-      >
-        {label}
-        <span className="flex flex-col -space-y-1">
-          <ChevronUp size={10} className={active && sort.dir === "asc" ? "opacity-100" : "opacity-30"} />
-          <ChevronDown size={10} className={active && sort.dir === "desc" ? "opacity-100" : "opacity-30"} />
-        </span>
-      </button>
-    </th>
   );
 }
 
 // ---------- Page ----------
 
-function MythosDashboard() {
-  const [query, setQuery] = useState("");
-  const [filter, setFilter] = useState<"All" | Category>("All");
-  const [sort, setSort] = useState<{ key: SortKey; dir: "asc" | "desc" }>({ key: "target", dir: "asc" });
-  const spotRef = useRef<HTMLDivElement>(null);
+function EmpireGym() {
+  const [navOpen, setNavOpen] = useState(false);
+  const [bookingState, setBookingState] = useState<"idle" | "sending" | "sent">("idle");
+  const formRef = useRef<HTMLFormElement>(null);
 
+  // Reveal on scroll
   useEffect(() => {
-    const onMove = (e: MouseEvent) => {
-      if (!spotRef.current) return;
-      spotRef.current.style.transform = `translate(${e.clientX - 240}px, ${e.clientY - 240}px)`;
-    };
-    window.addEventListener("mousemove", onMove);
-    return () => window.removeEventListener("mousemove", onMove);
+    const els = document.querySelectorAll<HTMLElement>("[data-reveal]");
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (e.isIntersecting) {
+            e.target.classList.add("eg-rise");
+            io.unobserve(e.target);
+          }
+        }
+      },
+      { threshold: 0.12 }
+    );
+    els.forEach((el) => io.observe(el));
+    return () => io.disconnect();
   }, []);
 
-  const kpis = useMemo(() => {
-    const total = EXPLOITS.length;
-    const pending = EXPLOITS.filter((e) => e.status !== "Resolved").length;
-    const critical = EXPLOITS.filter((e) => e.priority === "Critical").length;
-    const resolved = EXPLOITS.filter((e) => e.status === "Resolved").length;
-    const avgCvss = EXPLOITS.reduce((s, e) => s + e.cvss, 0) / total;
-    return { total, pending, critical, resolved, avgCvss };
-  }, []);
+  const handleBooking = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setBookingState("sending");
+    // FormSubmit.co — zero-config: sends form to CFG.email, no signup needed.
+    // Activate by submitting once and confirming the email Owner receives.
+    const fd = new FormData(e.currentTarget);
+    fetch(`https://formsubmit.co/ajax/${CFG.email}`, {
+      method: "POST",
+      headers: { Accept: "application/json" },
+      body: fd,
+    })
+      .then((r) => r.json())
+      .then(() => {
+        setBookingState("sent");
+        formRef.current?.reset();
+      })
+      .catch(() => setBookingState("idle"));
+  };
 
-  const rows = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    let out = EXPLOITS.filter((e) => filter === "All" || e.category === filter);
-    if (q) {
-      out = out.filter((e) =>
-        [e.id, e.product, e.cve, e.category, e.docType].some((f) => f.toLowerCase().includes(q))
-      );
-    }
-    const dirMul = sort.dir === "asc" ? 1 : -1;
-    return [...out].sort((a, b) => {
-      const av = a[sort.key], bv = b[sort.key];
-      if (typeof av === "number" && typeof bv === "number") return (av - bv) * dirMul;
-      return String(av).localeCompare(String(bv)) * dirMul;
-    });
-  }, [query, filter, sort]);
-
-  const tableKey = `${filter}-${query}-${sort.key}-${sort.dir}`;
+  const navLinks = [
+    { href: "#about", label: "About" },
+    { href: "#facilities", label: "Facilities" },
+    { href: "#pricing", label: "Pricing" },
+    { href: "#schedule", label: "Schedule" },
+    { href: "#location", label: "Visit" },
+  ];
 
   return (
-    <div className="relative min-h-screen text-[oklch(0.96_0.01_240)] overflow-hidden">
-      {/* Ambient layer */}
-      <div className="absolute inset-0 myt-grid-bg opacity-60 pointer-events-none" />
-      <div className="myt-blob" style={{ top: "-10%", left: "-5%", width: 420, height: 420, background: "oklch(0.82 0.15 200)" }} />
-      <div className="myt-blob" style={{ top: "30%", right: "-8%", width: 480, height: 480, background: "oklch(0.7 0.25 330)", animationDelay: "-6s" }} />
-      <div className="myt-blob" style={{ bottom: "-10%", left: "30%", width: 380, height: 380, background: "oklch(0.82 0.18 75)", animationDelay: "-12s" }} />
-      <div ref={spotRef} className="myt-spotlight" />
-
-      <div className="relative z-10 max-w-[1400px] mx-auto px-6 py-8">
-        {/* Header */}
-        <header className="flex items-center justify-between gap-4 myt-fade-up">
-          <div className="flex items-center gap-4">
-            <div className="relative h-12 w-12">
-              <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-[oklch(0.82_0.15_200)] to-[oklch(0.7_0.25_330)] flex items-center justify-center shadow-[0_0_30px_oklch(0.82_0.15_200/0.5)]">
-                <Shield size={20} className="text-[oklch(0.16_0.02_250)]" strokeWidth={2.5} />
-              </div>
-              <div className="absolute -inset-1 rounded-xl border border-[oklch(0.82_0.15_200/0.3)] myt-orbit">
-                <div className="absolute -top-1 left-1/2 h-2 w-2 -translate-x-1/2 rounded-full bg-[oklch(0.82_0.15_200)] shadow-[0_0_10px_oklch(0.82_0.15_200)]" />
-              </div>
-              <div className="absolute -inset-2 rounded-xl border border-[oklch(0.7_0.25_330/0.2)] myt-orbit-rev">
-                <div className="absolute top-1/2 -right-1 h-1.5 w-1.5 -translate-y-1/2 rounded-full bg-[oklch(0.7_0.25_330)] shadow-[0_0_8px_oklch(0.7_0.25_330)]" />
+    <div className="eg-body min-h-screen overflow-x-hidden">
+      {/* ============= NAV ============= */}
+      <nav className="fixed top-0 left-0 right-0 z-50 backdrop-blur-xl bg-[oklch(0.14_0.012_50/0.7)] border-b border-[var(--eg-border)]">
+        <div className="max-w-7xl mx-auto px-5 lg:px-8 h-16 flex items-center justify-between">
+          <a href="#top" className="flex items-center gap-2.5 group">
+            <div className="relative h-9 w-9 rounded-lg bg-gradient-to-br from-[oklch(0.72_0.21_45)] to-[oklch(0.78_0.19_70)] flex items-center justify-center shadow-[0_0_24px_oklch(0.72_0.21_45/0.5)] group-hover:rotate-6 transition-transform">
+              <Dumbbell size={18} className="text-[oklch(0.14_0.012_50)]" strokeWidth={2.6} />
+            </div>
+            <div className="leading-none">
+              <div className="eg-display text-[15px]">Empire</div>
+              <div className="text-[9px] font-mono tracking-[0.3em] text-[var(--eg-muted)]">
+                GYM · KHALDA
               </div>
             </div>
-            <div>
-              <div className="flex items-center gap-2 text-xs font-mono text-[oklch(0.7_0.02_250)] tracking-widest">
-                MYTHOS // SECOPS
-                <span className="px-1.5 py-0.5 rounded border border-[oklch(0.82_0.18_75/0.4)] text-[oklch(0.85_0.18_75)] text-[9px]">
-                  TLP:AMBER
-                </span>
-              </div>
-              <h1 className="text-xl font-semibold tracking-tight">Exploits & CVE Commitments</h1>
-            </div>
+          </a>
+          <div className="hidden md:flex items-center gap-8 text-sm text-[var(--eg-muted)]">
+            {navLinks.map((l) => (
+              <a key={l.href} href={l.href} className="hover:text-[var(--eg-text)] transition-colors">
+                {l.label}
+              </a>
+            ))}
           </div>
-          <div className="flex items-center gap-4">
-            <div className="hidden sm:flex items-center gap-2 text-xs text-[oklch(0.7_0.02_250)]">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[oklch(0.78_0.18_155)] opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-[oklch(0.78_0.18_155)]" />
+          <a
+            href={WHATSAPP_URL}
+            target="_blank"
+            rel="noreferrer"
+            className="hidden md:inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[oklch(0.72_0.21_45)] text-[oklch(0.14_0.012_50)] text-sm font-semibold hover:bg-[oklch(0.78_0.21_50)] transition-colors"
+          >
+            <MessageCircle size={14} /> Book Now
+          </a>
+          <button onClick={() => setNavOpen(true)} className="md:hidden p-2 -mr-2">
+            <Menu size={22} />
+          </button>
+        </div>
+      </nav>
+
+      {/* Mobile menu */}
+      {navOpen && (
+        <div className="fixed inset-0 z-[60] bg-[oklch(0.14_0.012_50/0.97)] backdrop-blur-xl md:hidden flex flex-col">
+          <div className="flex items-center justify-between px-5 h-16 border-b border-[var(--eg-border)]">
+            <span className="eg-display">Menu</span>
+            <button onClick={() => setNavOpen(false)} className="p-2 -mr-2">
+              <X size={22} />
+            </button>
+          </div>
+          <div className="flex flex-col gap-6 p-8 text-2xl eg-display">
+            {navLinks.map((l) => (
+              <a key={l.href} href={l.href} onClick={() => setNavOpen(false)}>
+                {l.label}
+              </a>
+            ))}
+            <a
+              href={WHATSAPP_URL}
+              target="_blank"
+              rel="noreferrer"
+              onClick={() => setNavOpen(false)}
+              className="mt-4 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-lg bg-[oklch(0.72_0.21_45)] text-[oklch(0.14_0.012_50)] text-base"
+            >
+              <MessageCircle size={16} /> WhatsApp
+            </a>
+          </div>
+        </div>
+      )}
+
+      {/* ============= HERO ============= */}
+      <section id="top" className="relative pt-16 min-h-screen flex flex-col">
+        <div className="absolute inset-0">
+          <img
+            src={heroImg}
+            alt="Empire Gym interior"
+            className="w-full h-full object-cover opacity-50"
+            width={1920}
+            height={1080}
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-[oklch(0.14_0.012_50/0.6)] via-[oklch(0.14_0.012_50/0.5)] to-[var(--eg-bg)]" />
+          <div className="absolute inset-0 eg-noise opacity-40 mix-blend-overlay" />
+        </div>
+
+        <div className="relative flex-1 flex items-center max-w-7xl mx-auto px-5 lg:px-8 py-20 w-full">
+          <div className="max-w-3xl">
+            <div data-reveal className="opacity-0">
+              <SectionTag icon={MapPin}>Khalda · Amman · Jordan</SectionTag>
+            </div>
+            <h1
+              data-reveal
+              className="opacity-0 mt-6 eg-display text-[clamp(3rem,11vw,7.5rem)] leading-[0.85] tracking-[-0.05em]"
+              style={{ animationDelay: "120ms" }}
+            >
+              Train like
+              <br />
+              <span className="bg-gradient-to-r from-[oklch(0.72_0.21_45)] via-[oklch(0.78_0.19_70)] to-[oklch(0.72_0.21_45)] bg-clip-text text-transparent">
+                a king.
               </span>
-              LIVE FEED · {new Date().toUTCString().slice(17, 25)} UTC
+            </h1>
+            <p
+              data-reveal
+              className="opacity-0 mt-6 max-w-lg text-base sm:text-lg text-[var(--eg-muted)] leading-relaxed"
+              style={{ animationDelay: "240ms" }}
+            >
+              Heavy iron, modern machines, and coaches who actually care.
+              No crowds. No contracts. Just the work.
+            </p>
+            <div
+              data-reveal
+              className="opacity-0 mt-8 flex flex-wrap gap-3"
+              style={{ animationDelay: "360ms" }}
+            >
+              <a
+                href="#book"
+                className="eg-pulse-cta inline-flex items-center gap-2 px-6 py-3.5 rounded-lg bg-[oklch(0.72_0.21_45)] text-[oklch(0.14_0.012_50)] font-semibold hover:bg-[oklch(0.78_0.21_50)] transition-all hover:translate-y-[-2px]"
+              >
+                Free Trial Session <ArrowRight size={16} />
+              </a>
+              <a
+                href={WHATSAPP_URL}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-2 px-6 py-3.5 rounded-lg border border-[var(--eg-border)] hover:border-[oklch(0.72_0.21_45/0.6)] hover:bg-[oklch(0.72_0.21_45/0.06)] transition-all"
+              >
+                <MessageCircle size={16} /> WhatsApp
+              </a>
             </div>
-            <Badge className="border-[oklch(0.82_0.15_200/0.4)] text-[oklch(0.85_0.15_200)] bg-[oklch(0.82_0.15_200/0.08)] font-mono">
-              <Activity size={11} /> v3.14.2
-            </Badge>
-          </div>
-        </header>
 
-        {/* Threat ticker */}
-        <div className="mt-6 myt-fade-up myt-mask-x relative h-9 rounded-lg border border-[var(--panel-border)] bg-[oklch(0.21_0.025_255/0.6)] backdrop-blur overflow-hidden" style={{ animationDelay: "100ms" }}>
-          <div className="myt-marquee-track items-center h-full text-xs font-mono text-[oklch(0.78_0.02_250)] gap-12 px-6">
-            {Array.from({ length: 2 }).map((_, dup) => (
-              <div key={dup} className="flex items-center gap-12 shrink-0">
-                {[
-                  { c: "oklch(0.78 0.22 25)", t: "CRIT · CVE-2024-0582 · Linux io_uring privilege escalation" },
-                  { c: "oklch(0.85 0.18 75)", t: "HIGH · CVE-2024-0727 · OpenSSL RSA timing leak" },
-                  { c: "oklch(0.85 0.15 200)", t: "INFO · MYT-0438 patched in Chromium 124.0.6367.118" },
-                  { c: "oklch(0.78 0.22 25)", t: "CRIT · CVE-2024-32487 · BoringSSL nonce reuse PoC" },
-                  { c: "oklch(0.78 0.18 155)", t: "RES · CVE-2024-26642 · eBPF verifier bypass shipped" },
-                  { c: "oklch(0.85 0.18 75)", t: "HIGH · CVE-2024-44308 · WebKit JSC integer overflow" },
-                ].map((it, i) => (
-                  <span key={`${dup}-${i}`} className="flex items-center gap-2 shrink-0">
-                    <span className="h-1.5 w-1.5 rounded-full" style={{ background: it.c, boxShadow: `0 0 8px ${it.c}` }} />
-                    {it.t}
-                  </span>
-                ))}
+            <div
+              data-reveal
+              className="opacity-0 mt-12 flex flex-wrap gap-x-8 gap-y-4"
+              style={{ animationDelay: "480ms" }}
+            >
+              {[
+                { v: "500+", l: "Members strong" },
+                { v: "8", l: "Expert coaches" },
+                { v: "18h", l: "Open daily" },
+              ].map((s) => (
+                <div key={s.l}>
+                  <div className="eg-display text-2xl text-[oklch(0.85_0.18_55)]">{s.v}</div>
+                  <div className="text-[11px] uppercase tracking-[0.18em] text-[var(--eg-muted)] font-mono">
+                    {s.l}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <a
+          href="#about"
+          className="relative mx-auto mb-8 text-[var(--eg-muted)] flex flex-col items-center gap-1 text-[10px] font-mono tracking-[0.3em] animate-bounce"
+        >
+          SCROLL <ChevronDown size={14} />
+        </a>
+      </section>
+
+      {/* ============= MARQUEE ============= */}
+      <Stripe />
+      <div className="bg-[oklch(0.18_0.015_50)] py-5 overflow-hidden border-y border-[var(--eg-border)]">
+        <div className="eg-marquee-track items-center gap-12 px-6 text-3xl eg-display text-[var(--eg-muted)]">
+          {Array.from({ length: 2 }).map((_, dup) => (
+            <div key={dup} className="flex items-center gap-12 shrink-0">
+              {["Strength", "Discipline", "Community", "No Excuses", "Results", "Iron"].map((t, i) => (
+                <span key={`${dup}-${i}`} className="flex items-center gap-12 shrink-0">
+                  {t}
+                  <Flame size={20} className="text-[oklch(0.72_0.21_45)]" />
+                </span>
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ============= ABOUT ============= */}
+      <section id="about" className="max-w-7xl mx-auto px-5 lg:px-8 py-24 lg:py-32">
+        <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+          <div data-reveal className="opacity-0 grid grid-cols-2 gap-4">
+            <div className="space-y-4">
+              <img
+                src={weightsImg}
+                alt="Weights"
+                loading="lazy"
+                width={1280}
+                height={1280}
+                className="rounded-2xl aspect-square object-cover w-full"
+              />
+              <img
+                src={cardioImg}
+                alt="Cardio area"
+                loading="lazy"
+                width={1280}
+                height={1280}
+                className="rounded-2xl aspect-[4/5] object-cover w-full"
+              />
+            </div>
+            <div className="pt-12">
+              <img
+                src={cablesImg}
+                alt="Cable machine"
+                loading="lazy"
+                width={1280}
+                height={1600}
+                className="rounded-2xl aspect-[4/5] object-cover w-full"
+              />
+            </div>
+          </div>
+
+          <div data-reveal className="opacity-0">
+            <SectionTag icon={Trophy}>About Empire</SectionTag>
+            <h2 className="mt-5 eg-display text-4xl sm:text-5xl lg:text-6xl leading-[0.95]">
+              Built for the
+              <br />
+              <span className="text-[oklch(0.78_0.19_70)]">grind.</span>
+            </h2>
+            <p className="mt-6 text-[var(--eg-muted)] text-lg leading-relaxed">
+              Empire Gym is Khalda's home for serious training. We built this
+              place for people who show up — not just to be seen, but to put
+              in the work. Heavy free weights, modern machines, recovery space,
+              and coaches who actually train themselves.
+            </p>
+            <div className="mt-8 grid sm:grid-cols-2 gap-4">
+              {[
+                { i: Award, t: "Certified coaches" },
+                { i: Heart, t: "Recovery & stretch zone" },
+                { i: Users, t: "Women's training hours" },
+                { i: Zap, t: "Open 18 hours / day" },
+              ].map((f) => (
+                <div
+                  key={f.t}
+                  className="flex items-center gap-3 p-4 rounded-xl border border-[var(--eg-border)] bg-[oklch(0.18_0.015_50/0.5)]"
+                >
+                  <f.i size={18} className="text-[oklch(0.72_0.21_45)] shrink-0" />
+                  <span className="text-sm">{f.t}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ============= FACILITIES ============= */}
+      <section id="facilities" className="relative py-24 lg:py-32 border-y border-[var(--eg-border)] bg-[oklch(0.16_0.013_50)]">
+        <div className="max-w-7xl mx-auto px-5 lg:px-8">
+          <div data-reveal className="opacity-0 max-w-2xl">
+            <SectionTag icon={Dumbbell}>What's inside</SectionTag>
+            <h2 className="mt-5 eg-display text-4xl sm:text-5xl lg:text-6xl leading-[0.95]">
+              Everything you need.
+              <br />
+              <span className="text-[oklch(0.72_0.21_45)]">Nothing you don't.</span>
+            </h2>
+          </div>
+
+          <div className="mt-14 grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {[
+              { i: Dumbbell, t: "Free Weights Zone", d: "Olympic platforms, dumbbells up to 60kg, premium barbells & racks." },
+              { i: Target, t: "Modern Machines", d: "Cable crossovers, plate-loaded selection, smith machines — full coverage." },
+              { i: Heart, t: "Cardio Floor", d: "Treadmills, ellipticals, bikes & stair climbers facing the front window." },
+              { i: Users, t: "Group Classes", d: "HIIT, boxing fundamentals, strength circuits — small groups, big energy." },
+              { i: Award, t: "Personal Training", d: "1-on-1 coaching with certified pros. Programming built around you." },
+              { i: Zap, t: "Recovery Zone", d: "Stretch space, foam rollers, and a quiet corner for cool-down." },
+            ].map((f, i) => (
+              <div
+                key={f.t}
+                data-reveal
+                className="opacity-0 eg-card p-6 group"
+                style={{ animationDelay: `${i * 80}ms` }}
+              >
+                <div className="h-11 w-11 rounded-xl border border-[oklch(0.72_0.21_45/0.4)] bg-[oklch(0.72_0.21_45/0.1)] flex items-center justify-center text-[oklch(0.85_0.18_55)] group-hover:rotate-6 transition-transform">
+                  <f.i size={20} />
+                </div>
+                <h3 className="mt-5 eg-display text-xl">{f.t}</h3>
+                <p className="mt-2 text-sm text-[var(--eg-muted)] leading-relaxed">{f.d}</p>
               </div>
             ))}
           </div>
         </div>
+      </section>
 
-        {/* KPIs */}
-        <section className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <KpiCard
-            label="Total Exploits Tracked"
-            value={kpis.total}
-            icon={Bug}
-            accent="oklch(0.85 0.15 200)"
-            spark={[3, 6, 4, 8, 7, 11, 9, 14, 13, 17, 16, 20]}
-            delay={0}
-            caption="Across 5 categories"
-          />
-          <KpiCard
-            label="Pending CVEs"
-            value={kpis.pending}
-            icon={Activity}
-            accent="oklch(0.85 0.18 75)"
-            spark={[12, 14, 13, 16, 15, 17, 16, 18, 17, 16, 15, 16]}
-            delay={120}
-            caption="Awaiting remediation"
-          />
-          <KpiCard
-            label="Critical Priorities"
-            value={kpis.critical}
-            icon={AlertTriangle}
-            accent="oklch(0.78 0.22 25)"
-            spark={[1, 2, 2, 3, 4, 4, 5, 5, 6, 6, 7, 7]}
-            delay={240}
-            pulse
-            caption="Sev ≥ 9.0 CVSS"
-          />
-          <KpiCard
-            label="Resolved · Avg CVSS"
-            value={kpis.avgCvss}
-            decimals={1}
-            suffix={`  · ${kpis.resolved} closed`}
-            icon={CheckCircle2}
-            accent="oklch(0.78 0.18 155)"
-            spark={[7, 7.2, 7.4, 7.6, 7.8, 7.9, 8.0, 8.1, 8.0, 8.0, 8.0, 8.0]}
-            delay={360}
-            caption="Mean across program"
-          />
-        </section>
+      {/* ============= PRICING ============= */}
+      <section id="pricing" className="max-w-7xl mx-auto px-5 lg:px-8 py-24 lg:py-32">
+        <div data-reveal className="opacity-0 text-center">
+          <SectionTag icon={Star}>Membership</SectionTag>
+          <h2 className="mt-5 eg-display text-4xl sm:text-5xl lg:text-6xl">
+            Honest pricing.
+          </h2>
+          <p className="mt-4 text-[var(--eg-muted)] max-w-xl mx-auto">
+            No hidden fees. No long contracts. Cancel anytime — but you won't want to.
+          </p>
+        </div>
 
-        {/* Filters + search */}
-        <section className="mt-8 flex flex-col lg:flex-row gap-3 lg:items-center justify-between myt-fade-up" style={{ animationDelay: "500ms" }}>
-          <div className="flex flex-wrap gap-2">
-            {CATEGORIES.map((c) => {
-              const active = filter === c;
-              return (
-                <button
-                  key={c}
-                  onClick={() => setFilter(c)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all duration-300 ${
-                    active
-                      ? "bg-[oklch(0.82_0.15_200/0.15)] border-[oklch(0.82_0.15_200/0.5)] text-[oklch(0.9_0.15_200)] scale-105 shadow-[0_0_24px_oklch(0.82_0.15_200/0.35)]"
-                      : "bg-[oklch(0.21_0.025_255/0.5)] border-[var(--panel-border)] text-[oklch(0.78_0.02_250)] hover:-translate-y-0.5 hover:border-[oklch(0.82_0.15_200/0.3)]"
-                  }`}
+        <div className="mt-14 grid md:grid-cols-3 gap-5">
+          {[
+            { name: "Monthly", price: 25, unit: "JOD", period: "/ month", perks: ["Full gym access", "Locker use", "Free wifi", "Open 18h/day"] },
+            { name: "Quarterly", price: 65, unit: "JOD", period: "/ 3 months", perks: ["Everything in Monthly", "1 free PT session", "10% off supplements", "Bring a friend (1x)"], featured: true },
+            { name: "Annual", price: 220, unit: "JOD", period: "/ year", perks: ["Everything in Quarterly", "4 PT sessions free", "Member-only events", "Locked-in price"] },
+          ].map((p, i) => (
+            <div
+              key={p.name}
+              data-reveal
+              className={`opacity-0 eg-card p-7 relative ${p.featured ? "border-[oklch(0.72_0.21_45/0.7)] shadow-[0_30px_80px_-30px_oklch(0.72_0.21_45/0.5)]" : ""}`}
+              style={{ animationDelay: `${i * 100}ms` }}
+            >
+              {p.featured && (
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-[oklch(0.72_0.21_45)] text-[oklch(0.14_0.012_50)] text-[10px] font-mono uppercase tracking-[0.2em]">
+                  Most Popular
+                </div>
+              )}
+              <div className="text-[var(--eg-muted)] text-sm font-mono uppercase tracking-[0.2em]">
+                {p.name}
+              </div>
+              <div className="mt-4 flex items-baseline gap-2">
+                <span className="eg-display text-6xl text-[oklch(0.96_0.005_60)]">{p.price}</span>
+                <span className="text-[oklch(0.85_0.18_55)] font-mono text-sm">{p.unit}</span>
+              </div>
+              <div className="text-xs text-[var(--eg-muted)] font-mono">{p.period}</div>
+              <ul className="mt-6 space-y-2.5 text-sm">
+                {p.perks.map((perk) => (
+                  <li key={perk} className="flex items-start gap-2.5">
+                    <CheckCircle2 size={16} className="text-[oklch(0.72_0.21_45)] shrink-0 mt-0.5" />
+                    <span className="text-[oklch(0.92_0.005_60)]">{perk}</span>
+                  </li>
+                ))}
+              </ul>
+              <a
+                href="#book"
+                className={`mt-7 w-full inline-flex items-center justify-center gap-2 px-5 py-3 rounded-lg font-semibold text-sm transition-all ${
+                  p.featured
+                    ? "bg-[oklch(0.72_0.21_45)] text-[oklch(0.14_0.012_50)] hover:bg-[oklch(0.78_0.21_50)]"
+                    : "border border-[var(--eg-border)] hover:border-[oklch(0.72_0.21_45/0.6)] hover:bg-[oklch(0.72_0.21_45/0.06)]"
+                }`}
+              >
+                Get Started <ArrowRight size={14} />
+              </a>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-6 text-center text-xs font-mono uppercase tracking-[0.2em] text-[var(--eg-muted)]">
+          Student discount available · Family rates on request
+        </div>
+      </section>
+
+      {/* ============= SCHEDULE / HOURS ============= */}
+      <section id="schedule" className="border-y border-[var(--eg-border)] bg-[oklch(0.16_0.013_50)]">
+        <div className="max-w-7xl mx-auto px-5 lg:px-8 py-24 lg:py-32 grid lg:grid-cols-2 gap-12">
+          <div data-reveal className="opacity-0">
+            <SectionTag icon={Clock}>Hours & Schedule</SectionTag>
+            <h2 className="mt-5 eg-display text-4xl sm:text-5xl lg:text-6xl leading-[0.95]">
+              Doors open
+              <br />
+              <span className="text-[oklch(0.72_0.21_45)]">when you do.</span>
+            </h2>
+            <div className="mt-8 space-y-3">
+              {CFG.hours.map((h) => (
+                <div
+                  key={h.d}
+                  className="flex items-center justify-between p-5 rounded-xl border border-[var(--eg-border)] bg-[oklch(0.18_0.015_50/0.6)]"
                 >
-                  {c}
+                  <span className="font-medium">{h.d}</span>
+                  <span className="font-mono text-[oklch(0.85_0.18_55)]">{h.t}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div data-reveal className="opacity-0">
+            <div className="eg-card p-6">
+              <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-[0.2em] text-[var(--eg-muted)]">
+                <Calendar size={12} /> This week's classes
+              </div>
+              <div className="mt-5 space-y-2">
+                {[
+                  { day: "Sun", time: "7:00 PM", name: "HIIT Bootcamp", coach: "Coach Yousef" },
+                  { day: "Mon", time: "6:00 PM", name: "Boxing Fundamentals", coach: "Coach Salem" },
+                  { day: "Tue", time: "8:00 PM", name: "Strength Circuit", coach: "Coach Lara" },
+                  { day: "Wed", time: "7:00 PM", name: "Mobility & Stretch", coach: "Coach Reem" },
+                  { day: "Thu", time: "6:00 PM", name: "Power Hour", coach: "Coach Yousef" },
+                ].map((c) => (
+                  <div
+                    key={c.day + c.name}
+                    className="flex items-center gap-4 p-3 rounded-lg hover:bg-[oklch(0.72_0.21_45/0.06)] transition-colors group"
+                  >
+                    <div className="w-12 text-center">
+                      <div className="text-[10px] font-mono uppercase tracking-widest text-[var(--eg-muted)]">{c.day}</div>
+                      <div className="text-xs font-mono text-[oklch(0.85_0.18_55)]">{c.time}</div>
+                    </div>
+                    <div className="flex-1 border-l border-[var(--eg-border)] pl-4">
+                      <div className="text-sm font-semibold">{c.name}</div>
+                      <div className="text-xs text-[var(--eg-muted)]">{c.coach}</div>
+                    </div>
+                    <ArrowRight size={14} className="text-[var(--eg-muted)] opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ============= TESTIMONIALS ============= */}
+      <section className="max-w-7xl mx-auto px-5 lg:px-8 py-24 lg:py-32">
+        <div data-reveal className="opacity-0 text-center max-w-2xl mx-auto">
+          <SectionTag icon={Star}>Members</SectionTag>
+          <h2 className="mt-5 eg-display text-4xl sm:text-5xl lg:text-6xl">
+            Real people.
+            <br />
+            <span className="text-[oklch(0.78_0.19_70)]">Real progress.</span>
+          </h2>
+        </div>
+        <div className="mt-14 grid md:grid-cols-3 gap-5">
+          {[
+            { n: "Omar K.", q: "Best gym I've trained at in Amman. Equipment is solid and the coaches actually push you.", r: 5 },
+            { n: "Layla H.", q: "Love the women's hours and the recovery zone. Place feels safe and clean every time.", r: 5 },
+            { n: "Hamzeh N.", q: "Switched from a chain gym and never looked back. Real iron, real people.", r: 5 },
+          ].map((t, i) => (
+            <div
+              key={t.n}
+              data-reveal
+              className="opacity-0 eg-card p-6"
+              style={{ animationDelay: `${i * 100}ms` }}
+            >
+              <div className="flex gap-0.5 text-[oklch(0.85_0.18_55)]">
+                {Array.from({ length: t.r }).map((_, j) => (
+                  <Star key={j} size={14} fill="currentColor" />
+                ))}
+              </div>
+              <p className="mt-4 text-[oklch(0.92_0.005_60)] leading-relaxed">"{t.q}"</p>
+              <div className="mt-5 text-sm font-mono text-[var(--eg-muted)]">— {t.n}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ============= LOCATION + BOOKING ============= */}
+      <section id="location" className="border-t border-[var(--eg-border)] bg-[oklch(0.16_0.013_50)]">
+        <div className="max-w-7xl mx-auto px-5 lg:px-8 py-24 lg:py-32 grid lg:grid-cols-2 gap-12">
+          {/* Booking form */}
+          <div id="book" data-reveal className="opacity-0">
+            <SectionTag icon={Send}>Book Your Free Trial</SectionTag>
+            <h2 className="mt-5 eg-display text-4xl sm:text-5xl lg:text-6xl leading-[0.95]">
+              Stop scrolling.
+              <br />
+              <span className="text-[oklch(0.72_0.21_45)]">Start lifting.</span>
+            </h2>
+            <p className="mt-5 text-[var(--eg-muted)]">
+              Drop your info — we'll text you back within an hour to schedule your free session.
+            </p>
+
+            <form ref={formRef} onSubmit={handleBooking} className="mt-7 space-y-3">
+              {/* FormSubmit hidden config */}
+              <input type="hidden" name="_subject" value={`New trial booking — ${CFG.name}`} />
+              <input type="hidden" name="_template" value="table" />
+              <input type="hidden" name="_captcha" value="false" />
+              <input type="text" name="_honey" style={{ display: "none" }} />
+
+              <div className="grid sm:grid-cols-2 gap-3">
+                <input
+                  required
+                  name="name"
+                  placeholder="Your name"
+                  className="px-4 py-3 rounded-lg bg-[oklch(0.18_0.015_50)] border border-[var(--eg-border)] text-sm placeholder:text-[oklch(0.55_0.015_60)] outline-none focus:border-[oklch(0.72_0.21_45/0.6)] focus:shadow-[0_0_0_4px_oklch(0.72_0.21_45/0.12)] transition-all"
+                />
+                <input
+                  required
+                  type="tel"
+                  name="phone"
+                  placeholder="Phone number"
+                  className="px-4 py-3 rounded-lg bg-[oklch(0.18_0.015_50)] border border-[var(--eg-border)] text-sm placeholder:text-[oklch(0.55_0.015_60)] outline-none focus:border-[oklch(0.72_0.21_45/0.6)] focus:shadow-[0_0_0_4px_oklch(0.72_0.21_45/0.12)] transition-all"
+                />
+              </div>
+              <select
+                name="goal"
+                className="w-full px-4 py-3 rounded-lg bg-[oklch(0.18_0.015_50)] border border-[var(--eg-border)] text-sm outline-none focus:border-[oklch(0.72_0.21_45/0.6)] transition-all"
+              >
+                <option>Goal — build muscle</option>
+                <option>Goal — lose fat</option>
+                <option>Goal — general fitness</option>
+                <option>Goal — train for sport</option>
+              </select>
+              <textarea
+                name="message"
+                rows={3}
+                placeholder="Anything we should know? (optional)"
+                className="w-full px-4 py-3 rounded-lg bg-[oklch(0.18_0.015_50)] border border-[var(--eg-border)] text-sm placeholder:text-[oklch(0.55_0.015_60)] outline-none focus:border-[oklch(0.72_0.21_45/0.6)] transition-all resize-none"
+              />
+              <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                <button
+                  type="submit"
+                  disabled={bookingState !== "idle"}
+                  className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-lg bg-[oklch(0.72_0.21_45)] text-[oklch(0.14_0.012_50)] font-semibold text-sm hover:bg-[oklch(0.78_0.21_50)] transition-colors disabled:opacity-60"
+                >
+                  {bookingState === "sending" && "Sending…"}
+                  {bookingState === "sent" && (
+                    <>
+                      <CheckCircle2 size={16} /> Sent — see you soon
+                    </>
+                  )}
+                  {bookingState === "idle" && (
+                    <>
+                      Send Booking <Send size={14} />
+                    </>
+                  )}
                 </button>
-              );
-            })}
+                <a
+                  href={WHATSAPP_URL}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-lg border border-[var(--eg-border)] hover:border-[oklch(0.72_0.21_45/0.6)] hover:bg-[oklch(0.72_0.21_45/0.06)] text-sm transition-all"
+                >
+                  <MessageCircle size={14} /> WhatsApp instead
+                </a>
+              </div>
+            </form>
           </div>
-          <div className="relative">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[oklch(0.65_0.02_250)]" />
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search ID, CVE, product…"
-              className="w-full lg:w-80 pl-9 pr-3 py-2 rounded-lg bg-[oklch(0.21_0.025_255/0.6)] border border-[var(--panel-border)] text-sm placeholder:text-[oklch(0.55_0.02_250)] outline-none transition-all duration-300 focus:border-[oklch(0.82_0.15_200/0.6)] focus:shadow-[0_0_0_4px_oklch(0.82_0.15_200/0.1)]"
-            />
-          </div>
-        </section>
 
-        {/* Table */}
-        <section className="mt-4 myt-card overflow-hidden myt-fade-up" style={{ animationDelay: "620ms" }}>
-          <div className="relative overflow-x-auto">
-            <div className="myt-scan" />
-            <table className="w-full text-sm">
-              <thead className="bg-[oklch(0.19_0.025_255/0.7)] border-b border-[var(--panel-border)]">
-                <tr>
-                  <SortHeader label="ID" k="id" sort={sort} setSort={setSort} />
-                  <SortHeader label="Category" k="category" sort={sort} setSort={setSort} />
-                  <SortHeader label="Doc Type" k="docType" sort={sort} setSort={setSort} />
-                  <SortHeader label="Product / Project" k="product" sort={sort} setSort={setSort} />
-                  <SortHeader label="Known CVE" k="cve" sort={sort} setSort={setSort} />
-                  <SortHeader label="Priority" k="priority" sort={sort} setSort={setSort} />
-                  <SortHeader label="Status" k="status" sort={sort} setSort={setSort} />
-                  <SortHeader label="Target Date" k="target" sort={sort} setSort={setSort} />
-                  <SortHeader label="CVSS" k="cvss" sort={sort} setSort={setSort} className="text-right" />
-                </tr>
-              </thead>
-              <tbody key={tableKey}>
-                {rows.map((r, i) => {
-                  const Icon = CATEGORY_ICONS[r.category];
-                  return (
-                    <tr
-                      key={r.id}
-                      className="myt-row myt-row-in border-b border-[var(--panel-border)] last:border-0 group"
-                      style={{ animationDelay: `${i * 35}ms` }}
-                    >
-                      <td className="py-3 px-4 font-mono text-xs text-[oklch(0.85_0.15_200)]">{r.id}</td>
-                      <td className="py-3 px-4">
-                        <span className="inline-flex items-center gap-2 text-[oklch(0.82_0.02_250)]">
-                          <Icon size={14} className="text-[oklch(0.65_0.02_250)] group-hover:text-[oklch(0.85_0.15_200)] transition-all duration-300 group-hover:scale-110" />
-                          {r.category}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 text-[oklch(0.82_0.02_250)]">{r.docType}</td>
-                      <td className="py-3 px-4 text-[oklch(0.92_0.01_240)]">{r.product}</td>
-                      <td className="py-3 px-4">
-                        <a
-                          href={`https://nvd.nist.gov/vuln/detail/${r.cve}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex items-center gap-1 font-mono text-xs text-[oklch(0.85_0.15_200)] hover:underline"
-                        >
-                          {r.cve}
-                          <ChevronRight size={12} className="opacity-0 -ml-2 group-hover:opacity-100 group-hover:ml-0 transition-all duration-300" />
-                          <ExternalLink size={11} className="opacity-50" />
-                        </a>
-                      </td>
-                      <td className="py-3 px-4">
-                        <Badge className={`${PRIORITY_STYLES[r.priority]} ${r.priority === "Critical" ? "myt-glitch" : ""}`}>
-                          {r.priority === "Critical" && <AlertTriangle size={10} />}
-                          {r.priority}
-                        </Badge>
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className="inline-flex items-center gap-2 text-[oklch(0.82_0.02_250)] text-xs">
-                          <span className={`relative flex h-1.5 w-1.5`}>
-                            <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${STATUS_DOT[r.status]} opacity-60`} />
-                            <span className={`relative inline-flex rounded-full h-1.5 w-1.5 ${STATUS_DOT[r.status]}`} />
-                          </span>
-                          {r.status}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 font-mono text-xs text-[oklch(0.78_0.02_250)]">{r.target}</td>
-                      <td className="py-3 px-4 text-right">
-                        <span
-                          className="font-mono text-xs font-semibold tabular-nums"
-                          style={{
-                            color:
-                              r.cvss >= 9 ? "oklch(0.78 0.22 25)"
-                              : r.cvss >= 7 ? "oklch(0.85 0.18 75)"
-                              : "oklch(0.85 0.15 200)",
-                          }}
-                        >
-                          {r.cvss.toFixed(1)}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-                {rows.length === 0 && (
-                  <tr>
-                    <td colSpan={9} className="py-12 text-center text-sm text-[oklch(0.65_0.02_250)]">
-                      No exploits match the current filter.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+          {/* Map */}
+          <div data-reveal className="opacity-0">
+            <SectionTag icon={MapPin}>Visit us</SectionTag>
+            <h3 className="mt-5 eg-display text-2xl">
+              {CFG.name} · {CFG.city}
+            </h3>
+            <div className="mt-5 rounded-2xl overflow-hidden border border-[var(--eg-border)] aspect-[4/3]">
+              <iframe
+                title="Empire Gym location"
+                src={`https://www.google.com/maps?q=${encodeURIComponent(CFG.mapsQuery)}&output=embed`}
+                className="w-full h-full grayscale-[30%] contrast-110"
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+              />
+            </div>
+            <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <a
+                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(CFG.mapsQuery)}`}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-3 p-4 rounded-xl border border-[var(--eg-border)] bg-[oklch(0.18_0.015_50/0.6)] hover:border-[oklch(0.72_0.21_45/0.6)] transition-colors"
+              >
+                <MapPin size={18} className="text-[oklch(0.72_0.21_45)]" />
+                <div className="text-sm">
+                  <div className="font-semibold">Get directions</div>
+                  <div className="text-xs text-[var(--eg-muted)]">{CFG.city}</div>
+                </div>
+              </a>
+              <a
+                href={`tel:${CFG.whatsapp}`}
+                className="flex items-center gap-3 p-4 rounded-xl border border-[var(--eg-border)] bg-[oklch(0.18_0.015_50/0.6)] hover:border-[oklch(0.72_0.21_45/0.6)] transition-colors"
+              >
+                <Phone size={18} className="text-[oklch(0.72_0.21_45)]" />
+                <div className="text-sm">
+                  <div className="font-semibold">Call us</div>
+                  <div className="text-xs text-[var(--eg-muted)]">{CFG.whatsapp}</div>
+                </div>
+              </a>
+            </div>
           </div>
-          <div className="px-4 py-2.5 border-t border-[var(--panel-border)] flex items-center justify-between text-[11px] text-[oklch(0.65_0.02_250)] font-mono">
-            <span>{rows.length} of {EXPLOITS.length} entries</span>
-            <span>Last sync · {new Date().toISOString().slice(0, 19).replace("T", " ")}Z</span>
-          </div>
-        </section>
+        </div>
+      </section>
 
-        <footer className="mt-8 text-center text-[11px] text-[oklch(0.55_0.02_250)] font-mono">
-          MYTHOS SECOPS · INTERNAL TOOLING · NOT A SOURCE OF TRUTH FOR PUBLIC DISCLOSURE
-        </footer>
-      </div>
+      {/* ============= FINAL CTA ============= */}
+      <section className="relative py-24 lg:py-32 overflow-hidden">
+        <div className="absolute inset-0">
+          <img src={heroImg} alt="" className="w-full h-full object-cover opacity-25" />
+          <div className="absolute inset-0 bg-gradient-to-b from-[var(--eg-bg)] via-transparent to-[var(--eg-bg)]" />
+        </div>
+        <div className="relative max-w-3xl mx-auto px-5 text-center">
+          <h2 data-reveal className="opacity-0 eg-display text-5xl sm:text-7xl leading-[0.9]">
+            Your first session
+            <br />
+            is on us.
+          </h2>
+          <p data-reveal className="opacity-0 mt-6 text-[var(--eg-muted)] text-lg" style={{ animationDelay: "150ms" }}>
+            Walk in. Lift heavy. Decide if it's home.
+          </p>
+          <div data-reveal className="opacity-0 mt-8 flex justify-center gap-3 flex-wrap" style={{ animationDelay: "300ms" }}>
+            <a
+              href="#book"
+              className="eg-pulse-cta inline-flex items-center gap-2 px-7 py-4 rounded-lg bg-[oklch(0.72_0.21_45)] text-[oklch(0.14_0.012_50)] font-semibold hover:bg-[oklch(0.78_0.21_50)] transition-all"
+            >
+              Book Free Trial <ArrowRight size={16} />
+            </a>
+            <a
+              href={WHATSAPP_URL}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-2 px-7 py-4 rounded-lg border border-[var(--eg-border)] hover:border-[oklch(0.72_0.21_45/0.6)] hover:bg-[oklch(0.72_0.21_45/0.06)] transition-all"
+            >
+              <MessageCircle size={16} /> Message us
+            </a>
+          </div>
+        </div>
+      </section>
+
+      {/* ============= FOOTER ============= */}
+      <Stripe />
+      <footer className="bg-[oklch(0.12_0.012_50)] py-12">
+        <div className="max-w-7xl mx-auto px-5 lg:px-8 grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div>
+            <div className="flex items-center gap-2.5">
+              <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-[oklch(0.72_0.21_45)] to-[oklch(0.78_0.19_70)] flex items-center justify-center">
+                <Dumbbell size={18} className="text-[oklch(0.14_0.012_50)]" strokeWidth={2.6} />
+              </div>
+              <div className="leading-none">
+                <div className="eg-display text-[15px]">Empire</div>
+                <div className="text-[9px] font-mono tracking-[0.3em] text-[var(--eg-muted)]">
+                  GYM · KHALDA
+                </div>
+              </div>
+            </div>
+            <p className="mt-4 text-sm text-[var(--eg-muted)] leading-relaxed">
+              Khalda's home for serious training. Real iron, real coaches, real progress.
+            </p>
+          </div>
+          <div>
+            <div className="text-xs font-mono uppercase tracking-[0.2em] text-[var(--eg-muted)]">Visit</div>
+            <div className="mt-3 text-sm space-y-1.5">
+              <div>{CFG.city}</div>
+              <a
+                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(CFG.mapsQuery)}`}
+                target="_blank"
+                rel="noreferrer"
+                className="text-[oklch(0.85_0.18_55)] hover:underline"
+              >
+                Get directions →
+              </a>
+            </div>
+          </div>
+          <div>
+            <div className="text-xs font-mono uppercase tracking-[0.2em] text-[var(--eg-muted)]">Hours</div>
+            <div className="mt-3 text-sm space-y-1.5 text-[var(--eg-muted)]">
+              {CFG.hours.map((h) => (
+                <div key={h.d}>
+                  <span className="text-[oklch(0.92_0.005_60)]">{h.d}</span> · {h.t}
+                </div>
+              ))}
+            </div>
+          </div>
+          <div>
+            <div className="text-xs font-mono uppercase tracking-[0.2em] text-[var(--eg-muted)]">Connect</div>
+            <div className="mt-3 flex flex-col gap-2 text-sm">
+              <a href={WHATSAPP_URL} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 hover:text-[oklch(0.85_0.18_55)]">
+                <MessageCircle size={14} /> WhatsApp
+              </a>
+              <a href={`https://instagram.com/${CFG.instagram}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 hover:text-[oklch(0.85_0.18_55)]">
+                <Instagram size={14} /> @{CFG.instagram}
+              </a>
+              <a href={`tel:${CFG.whatsapp}`} className="inline-flex items-center gap-2 hover:text-[oklch(0.85_0.18_55)]">
+                <Phone size={14} /> {CFG.whatsapp}
+              </a>
+            </div>
+          </div>
+        </div>
+        <div className="max-w-7xl mx-auto px-5 lg:px-8 mt-10 pt-6 border-t border-[var(--eg-border)] flex flex-col sm:flex-row justify-between gap-3 text-xs text-[var(--eg-muted)] font-mono uppercase tracking-[0.18em]">
+          <div>© {new Date().getFullYear()} {CFG.name}. All rights reserved.</div>
+          <div>Made with iron in Amman.</div>
+        </div>
+      </footer>
     </div>
   );
 }
