@@ -10,6 +10,8 @@ export const getRouter = () => {
     context: { queryClient },
     scrollRestoration: true,
     defaultPreloadStaleTime: 0,
+    // Strip trailing slash from BASE_URL so TanStack Router can match routes correctly
+    basepath: import.meta.env.BASE_URL.slice(0, -1) || "/",
   });
 
   return router;

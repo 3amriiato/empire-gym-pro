@@ -29,22 +29,6 @@ import cablesImg from "@/assets/gym-cables.jpg";
 import cardioImg from "@/assets/gym-cardio.jpg";
 
 export const Route = createFileRoute("/")({
-  head: () => ({
-    meta: [
-      { title: "Empire Gym Khalda — Train Like a King" },
-      {
-        name: "description",
-        content:
-          "Empire Gym in Khalda, Amman. Free weights, modern machines, expert coaches. Book your first free session — no contracts, just results.",
-      },
-      { property: "og:title", content: "Empire Gym Khalda — Train Like a King" },
-      {
-        property: "og:description",
-        content: "Premium training in Khalda, Amman. Book your free trial session today.",
-      },
-      { property: "og:type", content: "website" },
-    ],
-  }),
   component: EmpireGym,
 });
 

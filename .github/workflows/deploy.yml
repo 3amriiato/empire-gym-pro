@@ -24,24 +24,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
         with:
-          node-version: '20'
+          bun-version: latest
 
       - name: Install dependencies
-        run: npm install
+        run: bun install --frozen-lockfile
 
-      - name: Build Vite project
-        run: npm run build
+      - name: Build
+        run: bun run build
 
-      - name: Check dist structure
-        run: |
-          echo "=== Full dist structure ==="
-          find dist -type f | head -30
-          echo ""
-          echo "=== Looking for index.html ==="
-          find dist -name "index.html" -o -name "index.ts" -o -name "index.js"
+      - name: Copy index.html to 404.html for SPA routing
+        run: cp dist/index.html dist/404.html
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
