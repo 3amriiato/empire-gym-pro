@@ -35,10 +35,18 @@ jobs:
       - name: Build Vite project
         run: npm run build
 
+      - name: Check dist structure
+        run: |
+          echo "=== Full dist structure ==="
+          find dist -type f | head -30
+          echo ""
+          echo "=== Looking for index.html ==="
+          find dist -name "index.html" -o -name "index.ts" -o -name "index.js"
+
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: dist/client
+          path: dist
 
   deploy:
     name: Deploy
